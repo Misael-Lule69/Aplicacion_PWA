@@ -1,0 +1,393 @@
+/* Estilos generales */
+* {
+    margin: 0px;
+    padding: 0px;
+    text-decoration: none;
+    font-family: 'Open Sans', Verdana;
+}
+
+html,
+body {
+    overflow-x: hidden;
+}
+
+body {
+    background: #1A1D23;
+    /* Fondo oscuro (noche/uniforme) */
+    color: #EAEAEA;
+    /* Color de texto principal claro */
+    animation: fadeInPage 1s ease-out;
+    /* Animación de carga de página */
+}
+
+.clearfix {
+    clear: both;
+    float: none;
+}
+
+.container {
+    width: 85%;
+    margin: 0px auto;
+}
+
+/* Cabecera */
+#main-header {
+    background: #2A2E35;
+    /* Un gris oscuro para la cabecera */
+    height: 100px;
+    line-height: 85px;
+    border-bottom: 2px solid #B91C1C;
+    /* Borde rojo sangre */
+}
+
+#logo {
+    width: 63%;
+    float: left;
+}
+
+#logo h1 {
+    font-weight: bold;
+    font-size: 25px;
+    color: #B91C1C;
+    /* Rojo sangre para el logo */
+}
+
+#menu {
+    width: 380px;
+    float: left;
+}
+
+#menu ul li {
+    list-style: none;
+    float: left;
+    margin-left: 15px;
+    margin-right: 15px;
+}
+
+#menu ul li a {
+    color: #EAEAEA;
+    /* Texto del menú */
+    transition: all 300ms ease;
+    /* Modificado para animación de empuje */
+}
+
+#menu ul li a:hover {
+    color: #6D28D9;
+    /* Púrpura (glicina) para el hover */
+    transform: translateY(-3px);
+    /* Animación de empuje */
+}
+
+/* Slider */
+#slider {
+    height: 300px;
+    /* Gradiente sombrío */
+    background: linear-gradient(90deg, #B91C1C 0%, #4D2C5E 100%);
+}
+
+#slider h2 {
+    font-size: 40px;
+    text-align: center;
+    color: white;
+    line-height: 290px;
+    text-shadow: 0px 0px 8px black;
+    /* Sombra más pronunciada */
+}
+
+/* Maquetado de servicios */
+.subheader {
+    font-size: 34px;
+    color: #EAEAEA;
+    /* Color de sub-encabezado */
+    text-align: center;
+    margin-top: 40px;
+    margin-bottom: 30px;
+    padding-bottom: 15px;
+    /* Borde con opacidad del rojo */
+    border-bottom: 1px solid rgba(185, 28, 28, 0.3);
+}
+
+.service {
+    width: 33%;
+    text-align: center;
+    float: left;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    transition: all 0.3s ease-in-out;
+    /* Animación de levantamiento */
+}
+
+.service img {
+    height: 150px;
+    width: auto;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    /* Pequeño redondeo a las imágenes */
+    border: 2px solid #2A2E35;
+    /* Borde sutil */
+}
+
+.service h3 {
+    margin-bottom: 10px;
+    color: #EAEAEA;
+}
+
+.service p {
+    color: #B0B0B0;
+    /* Gris más claro para párrafos */
+    text-align: justify;
+    display: block;
+    width: 85%;
+    margin: 0px auto;
+}
+
+/* Contenedor de videos */
+#videos .container {
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+/* Estilo individual para cada video */
+.video {
+    width: 30%;
+    text-align: center;
+    float: none;
+    margin-bottom: 40px;
+    transition: all 0.3s ease-in-out;
+    /* Animación de levantamiento */
+}
+
+#videos .subheader {
+    display: block;
+    width: 100%;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+/* Estilo para los iframes de video */
+.video iframe {
+    width: 100%;
+    height: 315px;
+    max-width: 560px;
+    border: 2px solid #2A2E35;
+    /* Borde para los videos */
+    border-radius: 8px;
+}
+
+/* Animación Hover para Cards de Servicio y Video */
+.service:hover,
+.video:hover {
+    transform: translateY(-10px);
+    /* Mueve la tarjeta 10px hacia arriba */
+}
+
+/* Específicamente para la imagen y el iframe en hover */
+.service:hover img,
+.video:hover iframe {
+    border-color: #B91C1C;
+    /* Cambia el borde al color rojo de acento */
+}
+
+
+/* FOOTER */
+#footer {
+    background: #2A2E35;
+    /* Mismo color que la cabecera */
+    padding-top: 5px;
+    padding-bottom: 40px;
+    margin-top: 30px;
+    text-align: center;
+    color: white;
+}
+
+#footer .subheader {
+    color: white;
+    margin-bottom: 15px;
+}
+
+#footer p {
+    margin-bottom: 25px;
+    color: #B0B0B0;
+    /* Mismo color de párrafo */
+}
+
+/* Arreglo de redes sociales con Flexbox */
+#networks {
+    display: flex;
+    /* 1. Usamos Flexbox */
+    justify-content: center;
+    /* 2. Centramos los ítems */
+    gap: 40px;
+    /* 3. Creamos un espacio de 40px ENTRE cada ícono */
+    margin: 0px auto;
+    list-style: none;
+    margin-bottom: 20px;
+    margin-top: 20px;
+    width: auto;
+}
+
+#networks li {
+    /* Ya no necesitamos float ni márgenes laterales */
+    transition: all 300ms;
+}
+
+#networks li:hover {
+    opacity: 0.8;
+    transform: scale(1.1, 1.1);
+}
+
+#networks li a {
+    display: block;
+    width: 40px;
+    height: 40px;
+}
+
+#networks li img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    transition: all 300ms;
+    /* Filtro para hacer los iconos blancos si son oscuros */
+    /* filter: invert(1); */
+}
+
+#networks li:hover img {
+    /* Este filtro intenta colorear la imagen al púrpura de hover */
+    filter: invert(20%) sepia(88%) saturate(3015%) hue-rotate(265deg) brightness(87%) contrast(101%);
+}
+
+/* Media Queries (INTACTAS PARA MANTENER LA RESPONSIVIDAD) */
+@media (max-width: 1225px) {
+    .container {
+        width: 95%;
+    }
+}
+
+@media (max-width: 1085px) {
+    #main-header {
+        height: 70px;
+        line-height: 65px;
+    }
+}
+
+@media (max-width: 999px) {
+    #logo {
+        width: 227px;
+        float: none;
+        margin: 0px auto;
+    }
+
+    #menu {
+        float: none;
+        margin: 0px auto;
+    }
+
+    #slider {
+        overflow: hidden;
+        height: 150px;
+    }
+
+    #slider h2 {
+        font-size: 30px;
+        line-height: 30px;
+        margin-top: 60px;
+    }
+}
+
+@media (max-width: 700px) {
+
+    .service,
+    .video {
+        width: 70%;
+        float: none;
+        margin: 0px auto;
+        margin-top: 20px;
+        margin-bottom: 40px;
+    }
+
+    .service {
+        width: 50%;
+        text-align: justify;
+    }
+
+    .service img {
+        margin-bottom: 10px;
+    }
+
+    .service p,
+    .video p {
+        margin-top: 20px;
+    }
+
+    .video {
+        width: 90%;
+    }
+
+    .video iframe {
+        width: 100%;
+        height: auto;
+        aspect-ratio: 16 / 9;
+    }
+}
+
+@media (max-width: 460px) {
+    #slider h2 {
+        font-size: 25px;
+        line-height: 30px;
+        margin-top: 60px;
+    }
+}
+
+@media (max-width: 377px) {
+    #menu {
+        width: 100%;
+        text-align: center;
+    }
+
+    M #menu ul li {
+        margin-left: 4%;
+        margin-right: 4%;
+    }
+
+    #slider h2 {
+        margin-top: 50px;
+    }
+
+    .service,
+    .video {
+        width: 90%;
+    }
+
+    .video iframe {
+        width: 100%;
+        height: auto;
+        aspect-ratio: 16 / 9;
+    }
+}
+
+@media (max-width: 345px) {
+    #main-header {
+        height: auto;
+    }
+
+    #menu ul li {
+        float: none;
+    }
+}
+
+/* Definición de la animación de Fade-in */
+@keyframes fadeInPage {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+        /* Empieza 20px abajo */
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+        /* Termina en su posición original */
+    }
+}
