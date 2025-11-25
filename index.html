@@ -2,42 +2,177 @@
 <html lang="es">
 
 <head>
-    <!--Codificacion de caracteres-->
+    <!-- Codificación de caracteres y viewport -->
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <!-- Información básica del sitio -->
     <title>Demon Slayer</title>
+    <meta name="description" content="Sitio web sobre Demon Slayer: Kimetsu no Yaiba">
 
-    <!--Viewport Responsive-->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maxinum-scale=1.0, user-scalable=no" />
+    <!-- Icono de la pestaña -->
+    <link rel="shortcut icon" type="image/png" href="favicon/favicon-512.png">
 
-    <!--Icono de la pestaña-->
-    <link rel="shortcut icon" type="image/png" href="favicon/favicon-512.png" />
+    <!-- Color de la aplicación -->
+    <meta name="theme-color" content="#FB314E">
 
-    <!--Color de la app-->
-    <meta name="theme-color" content="FB314E" />
+    <!-- Optimización para móvil -->
+    <meta name="MobileOptimized" content="width">
+    <meta name="HandheldFriendly" content="true">
 
+    <!-- Meta etiquetas para Apple -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="favicon/favicon-1024.png">
+    <link rel="apple-touch-startup-image" href="favicon/favicon-512.png">
 
-    <!--Optimización para móvil-->
-    <meta name="MobileOptimazed" content="width" />
-    <meta name="Handheldfriendly" content="true" />
+    <!-- Manifest para PWA -->
+    <link rel="manifest" href="./manifest.json">
 
-    <!--Meta etiquetas para Apple-->
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-traslucent" />
-    <meta rel="apple-touch-icon" href="favicon/favicon-1024.png" />
-    <link rel="apple-touch-startup-image" href="favicon/favicon-512.png" />
-
-    <!--Meta etiquetas para Apple-->
-    <link rel="manifest" href="./manifest.json" />
-
-    <!--Hojas de estilo-->
+    <!-- Hojas de estilo -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/alertifyjs@1.13.1/build/css/alertify.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/alertifyjs@1.13.1/build/css/themes/bootstrap.min.css">
     <link rel="stylesheet" href="style.css">
 
-    <!--KQUERY-->
+    <!-- Scripts -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-    <script src="main.js"></script>
-</head>
+    <script src="https://cdn.jsdelivr.net/npm/alertifyjs@1.13.1/build/alertify.min.js"></script>
 
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-analytics.js";
+        import { getMessaging, getToken, onMessage, isSupported } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-messaging.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAVeQZ2181GM2V1rSXMZe6zXCbLp7wyQnc",
+            authDomain: "aplicacion-pwa.firebaseapp.com",
+            projectId: "aplicacion-pwa",
+            storageBucket: "aplicacion-pwa.firebasestorage.app",
+            messagingSenderId: "233398149796",
+            appId: "1:233398149796:web:5100ccb51eb742ba3efc31",
+            measurementId: "G-GBEM1H5TMJ"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+        const messaging = getMessaging(app);
+
+        async function initializeFirebaseMessaging() {
+            try {
+                console.log('🚀 Inicializando Firebase Messaging...');
+
+                // Verificar compatibilidad
+                if (!await isSupported()) {
+                    console.warn('Navegador no compatible con FCM');
+                    return null;
+                }
+
+                // Registrar Service Worker
+                const registration = await navigator.serviceWorker.register('./sw.js', {
+                    scope: './'
+                });
+                console.log('✅ Service Worker registrado');
+
+                // Esperar activación
+                if (registration.installing) {
+                    await new Promise((resolve) => {
+                        registration.installing.addEventListener('statechange', (e) => {
+                            if (e.target.state === 'activated') {
+                                console.log('✅ Service Worker activado');
+                                resolve();
+                            }
+                        });
+                    });
+                }
+
+                // Obtener token FCM - CON LA CLAVE CORRECTA
+                console.log('📡 Solicitando token FCM...');
+                const token = await getToken(messaging, {
+                    serviceWorkerRegistration: registration,
+                    vapidKey: 'BM4lWb5Is9MHFKZp9QZ0UMbmjti0_je-xhtRk709SA7zB0NkmjWC0LE72Y0XG_maBxywov7OQXG9dI_OjaIXFxo'  // ← CLAVE CORRECTA
+                });
+
+                if (token) {
+                    console.log('🎉 TOKEN FCM OBTENIDO:', token);
+                    await sendTokenToServer(token);
+                    return messaging;
+                } else {
+                    console.log('❌ No se pudo obtener token FCM');
+                    return null;
+                }
+
+            } catch (error) {
+                console.error('💥 Error en Firebase Messaging:', error);
+                return null;
+            }
+        }
+
+        async function sendTokenToServer(token) {
+            try {
+                const response = await fetch('save_subscription.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: token })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    console.log('💾 Token guardado en servidor');
+                } else {
+                    console.warn('⚠️ Error guardando token:', data.message);
+                }
+            } catch (error) {
+                console.error('❌ Error enviando token:', error);
+            }
+        }
+
+        // Inicialización cuando el DOM esté listo
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!('serviceWorker' in navigator)) {
+                console.warn('❌ Service Workers no soportados');
+                return;
+            }
+
+            if (!('Notification' in window)) {
+                console.warn('❌ Notificaciones no soportadas');
+                return;
+            }
+
+            try {
+                // Solicitar permiso
+                const permission = await Notification.requestPermission();
+                console.log('🔔 Permiso de notificaciones:', permission);
+
+                if (permission === 'granted') {
+                    console.log('🎉 Permiso concedido! Inicializando FCM...');
+                    const messagingInstance = await initializeFirebaseMessaging();
+
+                    if (messagingInstance) {
+                        // Configurar mensajes en primer plano
+                        onMessage(messagingInstance, (payload) => {
+                            console.log('📨 Mensaje en primer plano:', payload);
+
+                            // Mostrar notificación personalizada
+                            if (payload.notification) {
+                                const { title, body, icon } = payload.notification;
+                                new Notification(title || 'Nueva notificación', {
+                                    body: body || '',
+                                    icon: icon || './favicon/favicon-192.png'
+                                });
+                            }
+                        });
+
+                        console.log('✅ Firebase Messaging completamente inicializado');
+                    }
+                } else {
+                    console.log('❌ Permiso de notificaciones denegado por el usuario');
+                }
+            } catch (error) {
+                console.error('💥 Error inicializando notificaciones:', error);
+            }
+        });
+    </script>
+</head>
 
 <body>
     <header id="main-header">
@@ -117,27 +252,37 @@
     <footer id="footer">
         <div class="container">
             <h2 class="subheader">Contacto</h2>
-            <p>Síguenos en nuestras redes sociales para más contenido de Demon Slayer.</p>
-            <ul id="networks">
-                <li>
-                    <a href="#">
-                        <img src="https://cdn-icons-png.flaticon.com/512/124/124021.png" alt="Twitter">
-                    </a>
-                </li>
-                <li>
-                    <a href="https://www.facebook.com/share/19oCrNBbHo/?mibextid=wwXIfr">
-                        <img src="https://cdn-icons-png.flaticon.com/512/124/124010.png" alt="Facebook">
-                    </a>
-                </li>
-                <li>
-                    <a href="https://www.instagram.com/misael_lule16?igsh=c3RiZ2Y3Zzhsb3Ez&utm_source=qr">
-                        <img src="https://cdn-icons-png.flaticon.com/512/174/174855.png" alt="Instagram">
-                    </a>
-                </li>
-            </ul>
+            <p>¿Tienes alguna consulta? Escríbenos usando el formulario de contacto.</p>
+            <form id="contact-form" aria-label="Formulario de contacto">
+                <div class="form-row">
+                    <label for="nombre">Nombre</label>
+                    <input type="text" id="nombre" name="nombre" required />
+                </div>
+                <div class="form-row">
+                    <label for="apellidos">Apellidos</label>
+                    <input type="text" id="apellidos" name="apellidos" required />
+                </div>
+                <div class="form-row">
+                    <label for="edad">Edad</label>
+                    <input type="number" id="edad" name="edad" min="1" max="120" required />
+                </div>
+                <div class="form-row full">
+                    <label for="mensaje">Mensaje</label>
+                    <textarea id="mensaje" name="mensaje" rows="4" required></textarea>
+                </div>
+                <div class="form-row full">
+                    <button type="submit">Enviar</button>
+                </div>
+                <div id="form-message" role="status" aria-live="polite"></div>
+            </form>
             <div class="clearfix"></div>
         </div>
     </footer>
+    <!-- Contenedor de notificaciones (usado por implementaciones antiguas, puede permanecer vacío) -->
+    <div id="toast-container" aria-live="polite" aria-atomic="true" style="display:none"></div>
+
+    <!-- Script personalizado -->
+    <script src="main.js"></script>
 </body>
 
 </html>

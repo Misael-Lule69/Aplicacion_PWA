@@ -1,103 +1,99 @@
-// Asignar nombre y versión del caché
-const CACHE_NAME = 'v1_cache_MisaelLule_PWA';
+// Service Worker simplificado - ELIMINA errores de cache
+const CACHE_NAME = 'v8_cache_MisaelLule_PWA';
 
-// Archivos a cachear
+// Solo archivos esenciales
 const urlsToCache = [
     './',
     './index.html',
     './style.css',
-    './favicon/favicon-1024.png',
-    './favicon/favicon-512.png',
-    './favicon/favicon-384.png',
-    './favicon/favicon-256.png',
-    './favicon/favicon-128.png',
-    './favicon/favicon-96.png',
-    './favicon/favicon-64.png',
-    './favicon/favicon-32.png',
-    './favicon/favicon-16.png'
+    './main.js',
+    './favicon/favicon-192.png'
 ];
 
-// Evento INSTALL (reemplazado para evitar que un fallo en addAll rompa la instalación)
-self.addEventListener('install', e => {
-    e.waitUntil(
-        caches.open(CACHE_NAME).then(async cache => {
-            for (const url of urlsToCache) {
-                try {
-                    const res = await fetch(url, { cache: 'no-cache' });
-                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                    await cache.put(url, res.clone());
-                } catch (err) {
-                    console.warn('❌ No se pudo cachear:', url, err);
-                    // seguir con los demás recursos sin abortar la instalación
-                }
-            }
-        })
-            .then(() => self.skipWaiting())
-            .catch(err => console.error('❌ Error durante install', err))
+// Instalación
+self.addEventListener('install', event => {
+    console.log('Service Worker: Instalando...');
+
+    event.waitUntil(
+        caches.open(CACHE_NAME)
+            .then(cache => {
+                console.log('Cache abierto');
+                // Usamos addAll pero con manejo de errores
+                return cache.addAll(urlsToCache)
+                    .then(() => {
+                        console.log('Todos los archivos cacheados');
+                        return self.skipWaiting();
+                    })
+                    .catch(error => {
+                        console.warn('Algunos archivos no se pudieron cachear:', error);
+                        // Continuamos aunque falle el cache
+                        return self.skipWaiting();
+                    });
+            })
     );
 });
 
-// Evento ACTIVATE
-self.addEventListener('activate', e => {
-    const cacheWhitelist = [CACHE_NAME];
+// Activación
+self.addEventListener('activate', event => {
+    console.log('Service Worker: Activado');
 
-    e.waitUntil(
-        caches.keys()
-            .then(cacheNames => Promise.all(
+    event.waitUntil(
+        caches.keys().then(cacheNames => {
+            return Promise.all(
                 cacheNames.map(cacheName => {
-                    if (!cacheWhitelist.includes(cacheName)) {
-                        console.log('🗑 Borrando caché antiguo:', cacheName);
+                    if (cacheName !== CACHE_NAME) {
+                        console.log('Eliminando cache antiguo:', cacheName);
                         return caches.delete(cacheName);
                     }
                 })
-            ))
-            .then(() => self.clients.claim())
+            );
+        }).then(() => self.clients.claim())
     );
 });
 
-// Evento FETCH
-self.addEventListener('fetch', e => {
-    e.respondWith(
-        caches.match(e.request)
-            .then(res => {
-                if (res) {
-                    return res;
-                }
-                // Evitar intentar cachear requests con esquemas no soportados
-                try {
-                    const requestUrl = new URL(e.request.url);
-                    if (requestUrl.protocol !== 'http:' && requestUrl.protocol !== 'https:') {
-                        // Solo intentar fetch normal para esquemas no-http(s)
-                        return fetch(e.request);
-                    }
-                } catch (err) {
-                    return fetch(e.request);
-                }
+// Firebase Messaging - VERSIÓN COMPATIBLE
+importScripts('https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/9.22.0/firebase-messaging-compat.js');
 
-                // Si no está en caché, intenta desde la red
-                return fetch(e.request).then(networkRes => {
-                    // Solo cachear respuestas GET exitosas y same-origin (opcional)
-                    if (
-                        e.request.method === 'GET' &&
-                        networkRes &&
-                        networkRes.status === 200 &&
-                        (new URL(e.request.url)).origin === self.location.origin
-                    ) {
-                        return caches.open(CACHE_NAME).then(cache => {
-                            try {
-                                cache.put(e.request, networkRes.clone());
-                            } catch (err) {
-                                console.warn('No se pudo cachear:', e.request.url, err);
-                            }
-                            return networkRes;
-                        });
-                    }
-                    return networkRes;
-                }).catch(() => {
-                    if (e.request.destination === 'document') {
-                        return caches.match('./index.html');
-                    }
-                });
-            })
+firebase.initializeApp({
+    apiKey: "AIzaSyAVeQZ2181GM2V1rSXMZe6zXCbLp7wyQnc",
+    authDomain: "aplicacion-pwa.firebaseapp.com",
+    projectId: "aplicacion-pwa",
+    storageBucket: "aplicacion-pwa.firebasestorage.app",
+    messagingSenderId: "233398149796",
+    appId: "1:233398149796:web:5100ccb51eb742ba3efc31"
+});
+
+const messaging = firebase.messaging();
+
+// Manejar mensajes en segundo plano
+messaging.onBackgroundMessage((payload) => {
+    console.log('Mensaje en segundo plano recibido:', payload);
+
+    const notificationTitle = payload.notification?.title || 'Nueva notificación';
+    const notificationOptions = {
+        body: payload.notification?.body || '',
+        icon: './favicon/favicon-192.png',
+        badge: './favicon/favicon-192.png'
+    };
+
+    return self.registration.showNotification(notificationTitle, notificationOptions);
+});
+
+// Manejar clics en notificaciones
+self.addEventListener('notificationclick', (event) => {
+    event.notification.close();
+
+    event.waitUntil(
+        clients.matchAll({ type: 'window' }).then((clientList) => {
+            for (const client of clientList) {
+                if (client.url === '/' && 'focus' in client) {
+                    return client.focus();
+                }
+            }
+            if (clients.openWindow) {
+                return clients.openWindow('/');
+            }
+        })
     );
 });
