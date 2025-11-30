@@ -1,5 +1,5 @@
-// Asignar nombre y versión del caché (incrementar versión para forzar actualización)
-const CACHE_NAME = 'v3_cache_MisaelLule_PWA';
+// Asignar nombre y versión del caché
+const CACHE_NAME = 'v4_cache_MisaelLule_PWA';
 
 // SOLO cachear imágenes y favicons (NO cachear HTML, CSS, JS para ver cambios inmediatos)
 const urlsToCache = [
@@ -11,10 +11,11 @@ const urlsToCache = [
     './favicon/favicon-96.png',
     './favicon/favicon-64.png',
     './favicon/favicon-32.png',
-    './favicon/favicon-16.png'
+    './favicon/favicon-16.png',
+    './favicon/favicon-192.png'
 ];
 
-// Evento INSTALL (reemplazado para evitar que un fallo en addAll rompa la instalación)
+// Evento INSTALL
 self.addEventListener('install', e => {
     e.waitUntil(
         caches.open(CACHE_NAME).then(async cache => {
@@ -131,4 +132,30 @@ self.addEventListener('fetch', e => {
 
     // Para todo lo demás: Network only
     e.respondWith(fetch(e.request));
+});
+
+// Manejar clics en notificaciones
+self.addEventListener('notificationclick', (event) => {
+    console.log('Notificación clickeada:', event.notification.tag);
+    event.notification.close();
+
+    event.waitUntil(
+        clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+            // Buscar si hay una ventana abierta
+            for (const client of clientList) {
+                if (client.url.includes(self.location.origin) && 'focus' in client) {
+                    return client.focus();
+                }
+            }
+            // Si no hay ventana abierta, abrir una nueva
+            if (clients.openWindow) {
+                return clients.openWindow('/');
+            }
+        })
+    );
+});
+
+// Manejar cierre de notificaciones
+self.addEventListener('notificationclose', (event) => {
+    console.log('Notificación cerrada:', event.notification.tag);
 });
