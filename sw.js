@@ -159,3 +159,22 @@ self.addEventListener('notificationclick', (event) => {
 self.addEventListener('notificationclose', (event) => {
     console.log('Notificación cerrada:', event.notification.tag);
 });
+
+// Escuchar mensajes del cliente (para mostrar notificaciones desde la página)
+self.addEventListener('message', (event) => {
+    console.log('Mensaje recibido en Service Worker:', event.data);
+
+    if (event.data && event.data.type === 'SHOW_NOTIFICATION') {
+        const { title, options } = event.data;
+        event.waitUntil(
+            self.registration.showNotification(title, {
+                body: options.body || '',
+                icon: options.icon || './favicon/favicon-192.png',
+                badge: options.badge || './favicon/favicon-192.png',
+                tag: options.tag || 'default-notification',
+                requireInteraction: options.requireInteraction || false,
+                ...options
+            })
+        );
+    }
+});

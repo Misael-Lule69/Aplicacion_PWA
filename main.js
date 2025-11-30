@@ -294,17 +294,32 @@ async function showLocalNotification(title, options = {}) {
     // Intentar usar el Service Worker para mostrar la notificación (funciona incluso con la pestaña cerrada)
     if (serviceWorkerRegistration) {
         try {
-            await serviceWorkerRegistration.showNotification(title, {
-                ...defaultOptions,
-                ...options
-            });
-            console.log('✅ Notificación mostrada mediante Service Worker');
+            // Verificar que el Service Worker esté activo
+            if (serviceWorkerRegistration.active) {
+                await serviceWorkerRegistration.showNotification(title, {
+                    ...defaultOptions,
+                    ...options
+                });
+                console.log('✅ Notificación mostrada mediante Service Worker');
+            } else {
+                // Si el Service Worker no está activo, intentar enviar mensaje
+                if (navigator.serviceWorker.controller) {
+                    navigator.serviceWorker.controller.postMessage({
+                        type: 'SHOW_NOTIFICATION',
+                        title: title,
+                        options: { ...defaultOptions, ...options }
+                    });
+                    console.log('✅ Mensaje enviado al Service Worker para mostrar notificación');
+                } else {
+                    throw new Error('Service Worker no está activo');
+                }
+            }
         } catch (error) {
             console.error('Error al mostrar notificación con Service Worker:', error);
             // Fallback: usar Notification API directamente
             try {
                 new Notification(title, defaultOptions);
-                console.log('✅ Notificación mostrada mediante Notification API');
+                console.log('✅ Notificación mostrada mediante Notification API (fallback)');
             } catch (fallbackError) {
                 console.error('Error al mostrar notificación:', fallbackError);
             }
@@ -319,6 +334,106 @@ async function showLocalNotification(title, options = {}) {
         }
     }
 }
+
+// ============================================
+// DETECCIÓN DE INSTALACIÓN DE LA PWA
+// ============================================
+let deferredPrompt = null; // Almacenar el evento beforeinstallprompt
+
+// Detectar cuando el navegador está listo para mostrar el prompt de instalación
+window.addEventListener('beforeinstallprompt', (e) => {
+    console.log('📱 PWA puede ser instalada');
+    // Prevenir que el navegador muestre el prompt automáticamente
+    e.preventDefault();
+    // Guardar el evento para usarlo más tarde
+    deferredPrompt = e;
+});
+
+// Detectar cuando la aplicación se instala exitosamente
+window.addEventListener('appinstalled', async (evt) => {
+    console.log('✅ PWA instalada exitosamente');
+    deferredPrompt = null; // Limpiar el prompt guardado
+
+    // Función para mostrar la notificación de instalación
+    const showInstallNotification = async () => {
+        // Verificar permisos primero
+        if (Notification.permission === 'default') {
+            console.log('📢 Solicitando permisos de notificación para mostrar notificación de instalación...');
+            const granted = await requestNotificationPermission();
+            if (!granted) {
+                console.log('⚠️ Permisos denegados, no se puede mostrar la notificación de instalación');
+                return;
+            }
+        }
+
+        if (Notification.permission !== 'granted') {
+            console.log('⚠️ No se tienen permisos para mostrar notificaciones');
+            return;
+        }
+
+        // Esperar a que el Service Worker esté listo
+        let attempts = 0;
+        const maxAttempts = 10;
+
+        const waitForServiceWorker = () => {
+            return new Promise((resolve) => {
+                const checkSW = () => {
+                    attempts++;
+                    if (serviceWorkerRegistration && serviceWorkerRegistration.active) {
+                        console.log('✅ Service Worker está activo');
+                        resolve(true);
+                    } else if (attempts < maxAttempts) {
+                        console.log(`⏳ Esperando Service Worker... (intento ${attempts}/${maxAttempts})`);
+                        setTimeout(checkSW, 500);
+                    } else {
+                        console.log('⚠️ Service Worker no está disponible, usando Notification API');
+                        resolve(false);
+                    }
+                };
+                checkSW();
+            });
+        };
+
+        await waitForServiceWorker();
+
+        // Mostrar notificación de bienvenida
+        try {
+            await showLocalNotification('¡Aplicación instalada! 🎉', {
+                body: 'Gracias por instalar Demon Slayer PWA. ¡Disfruta de la mejor experiencia!',
+                icon: './favicon/favicon-192.png',
+                badge: './favicon/favicon-192.png',
+                tag: 'pwa-installed',
+                requireInteraction: false
+            });
+            console.log('✅ Notificación de instalación mostrada');
+        } catch (error) {
+            console.error('❌ Error al mostrar notificación de instalación:', error);
+        }
+    };
+
+    // Esperar un momento para asegurar que todo esté listo
+    setTimeout(showInstallNotification, 2000);
+});
+
+// Función para verificar si la app ya está instalada
+function isPWAInstalled() {
+    // Verificar si se está ejecutando en modo standalone (instalada)
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+        return true;
+    }
+    // Verificar si está en modo standalone en iOS
+    if (window.navigator.standalone === true) {
+        return true;
+    }
+    return false;
+}
+
+// Verificar al cargar la página si ya está instalada
+$(document).ready(function () {
+    if (isPWAInstalled()) {
+        console.log('✅ La PWA ya está instalada');
+    }
+});
 
 // Solicitar permisos automáticamente después de que la página cargue
 // (con un pequeño delay para mejor experiencia de usuario)
