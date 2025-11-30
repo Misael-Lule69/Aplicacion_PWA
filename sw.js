@@ -1,11 +1,8 @@
-// Asignar nombre y versión del caché
-const CACHE_NAME = 'v1_cache_MisaelLule_PWA';
+// Asignar nombre y versión del caché (incrementar versión para forzar actualización)
+const CACHE_NAME = 'v3_cache_MisaelLule_PWA';
 
-// Archivos a cachear
+// SOLO cachear imágenes y favicons (NO cachear HTML, CSS, JS para ver cambios inmediatos)
 const urlsToCache = [
-    './',
-    './index.html',
-    './style.css',
     './favicon/favicon-1024.png',
     './favicon/favicon-512.png',
     './favicon/favicon-384.png',
@@ -55,49 +52,83 @@ self.addEventListener('activate', e => {
     );
 });
 
-// Evento FETCH
+// Evento FETCH - NO cachear HTML, CSS, JS para ver cambios inmediatos
 self.addEventListener('fetch', e => {
-    e.respondWith(
-        caches.match(e.request)
-            .then(res => {
-                if (res) {
-                    return res;
-                }
-                // Evitar intentar cachear requests con esquemas no soportados
-                try {
-                    const requestUrl = new URL(e.request.url);
-                    if (requestUrl.protocol !== 'http:' && requestUrl.protocol !== 'https:') {
-                        // Solo intentar fetch normal para esquemas no-http(s)
-                        return fetch(e.request);
-                    }
-                } catch (err) {
-                    return fetch(e.request);
-                }
+    const requestUrl = new URL(e.request.url);
+    const isImage = /\.(jpg|jpeg|png|gif|svg|webp|ico)$/i.test(requestUrl.pathname);
+    const isFavicon = requestUrl.pathname.includes('favicon');
 
-                // Si no está en caché, intenta desde la red
-                return fetch(e.request).then(networkRes => {
-                    // Solo cachear respuestas GET exitosas y same-origin (opcional)
-                    if (
-                        e.request.method === 'GET' &&
-                        networkRes &&
-                        networkRes.status === 200 &&
-                        (new URL(e.request.url)).origin === self.location.origin
-                    ) {
-                        return caches.open(CACHE_NAME).then(cache => {
-                            try {
-                                cache.put(e.request, networkRes.clone());
-                            } catch (err) {
-                                console.warn('No se pudo cachear:', e.request.url, err);
-                            }
-                            return networkRes;
-                        });
-                    }
+    // Para HTML, CSS, JS y APIs: SIEMPRE desde la red (NO cachear)
+    if (
+        e.request.method === 'GET' &&
+        !isImage &&
+        !isFavicon &&
+        (requestUrl.pathname.endsWith('.html') ||
+            requestUrl.pathname.endsWith('.css') ||
+            requestUrl.pathname.endsWith('.js') ||
+            requestUrl.pathname === '/' ||
+            requestUrl.pathname.includes('api/'))
+    ) {
+        // Siempre buscar desde la red (no cachear)
+        e.respondWith(
+            fetch(e.request, { cache: 'no-store' })
+                .then(networkRes => {
                     return networkRes;
-                }).catch(() => {
-                    if (e.request.destination === 'document') {
-                        return caches.match('./index.html');
+                })
+                .catch(() => {
+                    // Solo si falla completamente la red, intentar cache como último recurso
+                    return caches.match(e.request).then(cachedRes => {
+                        if (cachedRes) {
+                            return cachedRes;
+                        }
+                        // Si es una página y no hay cache, devolver index.html del cache
+                        if (e.request.destination === 'document') {
+                            return caches.match('./index.html');
+                        }
+                    });
+                })
+        );
+        return;
+    }
+
+    // Para imágenes y favicons: Cache First (más rápido, pero actualizar en segundo plano)
+    if (isImage || isFavicon) {
+        e.respondWith(
+            caches.match(e.request)
+                .then(cachedRes => {
+                    // Si hay cache, devolverlo inmediatamente y actualizar en segundo plano
+                    if (cachedRes) {
+                        // Actualizar cache en segundo plano sin bloquear
+                        fetch(e.request)
+                            .then(networkRes => {
+                                if (networkRes && networkRes.status === 200) {
+                                    // Clonar ANTES de usar la respuesta
+                                    const responseClone = networkRes.clone();
+                                    caches.open(CACHE_NAME).then(cache => {
+                                        cache.put(e.request, responseClone);
+                                    }).catch(() => { });
+                                }
+                            })
+                            .catch(() => { });
+                        return cachedRes;
                     }
-                });
-            })
-    );
+
+                    // Si no hay cache, buscar en la red
+                    return fetch(e.request).then(networkRes => {
+                        if (networkRes && networkRes.status === 200) {
+                            // Clonar ANTES de usar la respuesta
+                            const responseClone = networkRes.clone();
+                            caches.open(CACHE_NAME).then(cache => {
+                                cache.put(e.request, responseClone);
+                            }).catch(() => { });
+                        }
+                        return networkRes;
+                    });
+                })
+        );
+        return;
+    }
+
+    // Para todo lo demás: Network only
+    e.respondWith(fetch(e.request));
 });

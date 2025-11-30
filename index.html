@@ -53,6 +53,12 @@
                     <li><a href="#footer">Contacto</a></li>
                 </ul>
             </div>
+            <div id="update-btn-container">
+                <button id="force-update-btn" title="Forzar actualización de la aplicación"
+                    aria-label="Actualizar aplicación">
+                    🔄
+                </button>
+            </div>
         </div>
     </header>
     <div class="clearfix"></div>
@@ -136,6 +142,31 @@
                 </li>
             </ul>
             <div class="clearfix"></div>
+
+            <!-- Formulario de Contacto -->
+            <div id="contact-form-container">
+                <h3>Envíanos un mensaje</h3>
+                <form id="contact-form" method="POST">
+                    <div class="form-group">
+                        <label for="nombre">Nombre</label>
+                        <input type="text" id="nombre" name="nombre" required maxlength="100">
+                    </div>
+                    <div class="form-group">
+                        <label for="apellidos">Apellidos</label>
+                        <input type="text" id="apellidos" name="apellidos" required maxlength="150">
+                    </div>
+                    <div class="form-group">
+                        <label for="edad">Edad</label>
+                        <input type="number" id="edad" name="edad" required min="1" max="120">
+                    </div>
+                    <div class="form-group">
+                        <label for="mensaje">Mensaje *</label>
+                        <textarea id="mensaje" name="mensaje" rows="5" required></textarea>
+                    </div>
+                    <div id="form-message" class="form-message"></div>
+                    <button type="submit" id="submit-btn">Enviar Mensaje</button>
+                </form>
+            </div>
         </div>
     </footer>
 </body>
